@@ -1,0 +1,73 @@
+- name: F5 ansible playground
+  hosts: all
+  connection: local
+  gather_facts: no
+           
+  vars:
+    ansible_python_interpreter: /usr/bin/python3
+    provider:
+      password: Cisco123
+      server: 192.168.1.201
+      user: admin
+      validate_certs: no
+      server_port: 443
+      #appname: web_app
+      #backend_port: '80'
+      #domainname: mrinal.tech
+      #environment: 192.168.1.0
+      #req_item_number: RITM0010024
+      #request_number: REQ0010024
+      #server1: 192.168.10.1
+      # server2: 192.168.20.1
+      #server3: 192.168.30.1
+    #vip_port: '80'
+  tasks:
+     -  name: Create a pool
+        bigip_pool:
+          provider: "{{ provider }}"
+          lb_method: "round-robin"
+          name: "{{ appname }}.{{ domainname }}_pool"
+          partition: "Common"
+          slow_ramp_time: "120"
+          monitor_type: "single"
+          monitors: "/Common/gateway_icmp"
+          state: "present"
+        tags:
+            - skip
+
+     -  name: Create a pool_member
+        bigip_pool_member:
+          provider: "{{ provider }}"
+          description: "webserver {{ server1 }}"
+          host: "{{ server1 }}"
+          name: "{{ server1 }}"
+          pool: "{{ appname }}.{{ domainname }}_pool"
+          port: "{{ backend_port }}"
+     -  name: Create a pool_member
+        bigip_pool_member:
+          provider: "{{ provider }}"
+          description: "webserver {{ server2 }}"
+          host: "{{ server2 }}"
+          name: "{{ server2 }}"
+          pool: "{{ appname }}.{{ domainname }}_pool"
+          port: "{{ backend_port }}"
+     -  name: Create a pool_member
+        bigip_pool_member:
+          provider: "{{ provider }}"
+          description: "webserver {{ server3 }}"
+          host: "{{ server3 }}"
+          name: "{{ server3 }}"
+          pool: "{{ appname }}.{{ domainname }}_pool"
+          port: "{{ backend_port }}"   
+         
+     -  name: Create Standard L4 Virtual_server
+        bigip_virtual_server:
+          provider: "{{ provider }}"
+          name: "{{ appname }}.{{ domainname }}_vip"
+          destination: "192.168.1.10"
+          port: "{{ vip_port }}"
+          profiles: "/Common/tcp"
+          pool: "{{ appname }}.{{ domainname }}_pool"
+          state: "present"
+          partition: "Common"
+
